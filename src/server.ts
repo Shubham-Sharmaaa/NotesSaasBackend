@@ -1,0 +1,68 @@
+import dotenv from "dotenv";
+dotenv.config();
+import express, {
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
+import cors from "cors";
+import jwt, { type JwtPayload } from "jsonwebtoken";
+const app = express();
+import mongoose from "mongoose";
+import authrouter from "./routes/authRouter.js";
+import privateRouter from "./routes/privaterouter.js";
+import LinkModel from "./models/LinkModel.js";
+import NotesModel from "./models/NotesModel.js";
+mongoose
+  .connect(process.env.MONGO_URL as string)
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((error) => {
+    console.error("Error connecting to MongoDB:", error);
+  });
+const secret = process.env.SECRET || "your_jwt_secret_key";
+app.use(express.json());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  }),
+);
+export interface AuthRequest extends Request {
+  userId?: string;
+}
+function isAuthorized(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(404).json({ message: "token not found" });
+
+    const validtoken = jwt.verify(token, secret);
+
+    const { userId } = validtoken as JwtPayload;
+    req.userId = userId;
+    next();
+  } catch (err) {
+    return res.status(500).json({ message: "Somthing went wrong", err });
+  }
+}
+app.use("/auth", authrouter);
+app.get("/get-note/:hash", async (req: AuthRequest, res: Response) => {
+  try {
+    const { hash } = req.params;
+    if (!hash)
+      return res.status(400).json({ message: "please provide proper input" });
+    const link = await LinkModel.find({ hash });
+    if (!link || link.length === 0)
+      return res.status(404).json({ message: "link not found" });
+    const note = await NotesModel.findById(link[0]?.noteId);
+    if (!note) return res.status(404).json({ message: "note not found" });
+    return res.status(200).json({ message: "note found", note });
+  } catch (err) {
+    return res.status(500).json({ message: "something went wrong", err });
+  }
+});
+app.use("/private", isAuthorized, privateRouter);
+app.listen(3000, () => {
+  console.log("Server is running on port 3000");
+});
