@@ -1,5 +1,4 @@
-import dotenv from "dotenv";
-dotenv.config();
+import "./config/env.js";
 import express, {
   type NextFunction,
   type Request,
@@ -52,12 +51,16 @@ app.get("/get-note/:hash", async (req: AuthRequest, res: Response) => {
     const { hash } = req.params;
     if (!hash)
       return res.status(400).json({ message: "please provide proper input" });
-    const link = await LinkModel.find({ hash });
-    if (!link || link.length === 0)
-      return res.status(404).json({ message: "link not found" });
-    const note = await NotesModel.findById(link[0]?.noteId);
+    const link = await LinkModel.findOne({ hash });
+    if (!link) return res.status(404).json({ message: "link not found" });
+    const note = await NotesModel.findById(link.noteId);
     if (!note) return res.status(404).json({ message: "note not found" });
-    return res.status(200).json({ message: "note found", note });
+    return res
+      .status(200)
+      .json({
+        message: "note found",
+        note: { id: note._id, title: note.title, body: note.body },
+      });
   } catch (err) {
     return res.status(500).json({ message: "something went wrong", err });
   }
