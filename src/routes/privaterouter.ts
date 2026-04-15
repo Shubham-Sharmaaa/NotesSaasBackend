@@ -44,6 +44,7 @@ privateRouter.get("/all-content", async (req: AuthRequest, res: Response) => {
           body: note.body,
           createdAt: note.createdAt,
           _id: note._id,
+          isPinned: note.isPinned,
         };
       }),
     });
