@@ -16,6 +16,11 @@ const NotesSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isFavorite: {
+    type: Boolean,
+    required: true,
+    default: false,
+  },
 });
 
 const NotesModel = mongoose.model("Notes", NotesSchema);

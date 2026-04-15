@@ -15,12 +15,17 @@ privateRouter.post(
     try {
       const userId = req.userId;
       if (!userId) return res.status(410).json({ message: "no userId" });
-      const { title, body } = req.body;
-      if (!title || !body)
+      const { title, body, isFavorite } = req.body;
+      if (!title || !body || isFavorite === undefined || isFavorite === null)
         return res
           .status(410)
           .json({ message: "please provide title and body" });
-      const newContent = await NotesModel.create({ title, body, userId });
+      const newContent = await NotesModel.create({
+        title,
+        body,
+        userId,
+        isFavorite,
+      });
       if (!newContent)
         return res
           .status(500)
@@ -45,6 +50,7 @@ privateRouter.get("/all-content", async (req: AuthRequest, res: Response) => {
           createdAt: note.createdAt,
           _id: note._id,
           isPinned: note.isPinned,
+          isFavorite: note.isFavorite,
         };
       }),
     });
@@ -94,6 +100,20 @@ privateRouter.put("/update-note", async (req: AuthRequest, res: Response) => {
     );
 
     return res.status(200).json({ message: "Note updated", note: updatedNote });
+  } catch (err) {
+    return res.status(500).json({ message: "something went wrong", err });
+  }
+});
+privateRouter.put("/add-favorite", async (req: AuthRequest, res: Response) => {
+  try {
+    const { noteId, isFavorite } = req.body;
+    if (!noteId || !isFavorite)
+      return res.status(400).json({ message: "Please provide a noteId" });
+    const note = await NotesModel.findById(noteId);
+    if (!note) return res.status(404).json({ message: "note not found" });
+    note.isFavorite = !note.isFavorite;
+    await note.save();
+    return res.status(200).json({ message: "Success", newNote: note });
   } catch (err) {
     return res.status(500).json({ message: "something went wrong", err });
   }
