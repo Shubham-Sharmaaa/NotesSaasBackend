@@ -97,6 +97,20 @@ privateRouter.put("/update-note", async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: "something went wrong", err });
   }
 });
+privateRouter.put("/pin-note", async (req: AuthRequest, res: Response) => {
+  try {
+    const { noteId } = req.body;
+    if (!noteId)
+      return res.status(400).json({ message: "Please provide a noteId" });
+    const note = await NotesModel.findById(noteId);
+    if (!note) return res.status(404).json({ message: "note not found" });
+    note.isPinned = !note.isPinned;
+    await note.save();
+    return res.status(200).json({ message: "Success", newNote: note });
+  } catch (err) {
+    return res.status(500).json({ message: "something went wrong", err });
+  }
+});
 privateRouter.get("/get-note/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;

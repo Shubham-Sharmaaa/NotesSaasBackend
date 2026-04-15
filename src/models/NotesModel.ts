@@ -1,16 +1,20 @@
 import mongoose from "mongoose";
 
 const NotesSchema = new mongoose.Schema({
-  title: { type: String, require: true },
+  title: { type: String, required: true },
   body: { type: String },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    require: true,
+    required: true,
   },
   createdAt: {
     type: Date,
-    default: new Date(),
+    default: Date.now,
+  },
+  isPinned: {
+    type: Boolean,
+    default: false,
   },
 });
 
