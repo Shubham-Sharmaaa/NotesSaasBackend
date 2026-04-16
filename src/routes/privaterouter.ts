@@ -52,6 +52,7 @@ privateRouter.get("/all-content", async (req: AuthRequest, res: Response) => {
           isPinned: note.isPinned,
           isFavorite: note.isFavorite,
           isDeleted: note.isDeleted,
+          deleteDate: note.deleteDate,
         };
       }),
     });
@@ -68,6 +69,7 @@ privateRouter.put("/move-trash", async (req: AuthRequest, res: Response) => {
       isDeleted: true,
       isFavorite: false,
       isPinned: false,
+      deleteDate: Date.now(),
     });
     return res
       .status(200)
@@ -83,6 +85,7 @@ privateRouter.put("/remove-trash", async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: "please provide proper input" });
     const note = await NotesModel.findByIdAndUpdate(id, {
       isDeleted: false,
+      deleteDate: null,
     });
     return res
       .status(200)

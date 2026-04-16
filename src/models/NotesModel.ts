@@ -25,6 +25,9 @@ const NotesSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  deleteDate: {
+    type: Date || null,
+  },
 });
 
 const NotesModel = mongoose.model("Notes", NotesSchema);
