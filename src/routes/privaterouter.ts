@@ -66,6 +66,8 @@ privateRouter.put("/move-trash", async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: "please provide proper input" });
     const deletedNote = await NotesModel.findByIdAndUpdate(id, {
       isDeleted: true,
+      isFavorite: false,
+      isPinned: false,
     });
     return res
       .status(200)
@@ -93,17 +95,23 @@ privateRouter.delete(
   "/delete-note",
   async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.body;
+      const userId = req.userId;
       const { id } = req.body;
       if (!id)
         return res.status(403).json({ message: "please provide proper input" });
-      const deletedNote = await NotesModel.deleteOne({
+      const deletedNote = await NotesModel.findOneAndDelete({
         _id: new mongoose.Types.ObjectId(id),
         userId: new mongoose.Types.ObjectId(userId),
       });
-      return res
-        .status(200)
-        .json({ message: "user deleted successfully", deletedNote });
+
+      if (!deletedNote) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+
+      return res.status(200).json({
+        message: "Note deleted successfully",
+        deletedNote,
+      });
     } catch (err) {
       return res.status(500).json({ message: "something went wrong", err });
     }
