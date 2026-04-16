@@ -21,6 +21,10 @@ const NotesSchema = new mongoose.Schema({
     required: true,
     default: false,
   },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const NotesModel = mongoose.model("Notes", NotesSchema);

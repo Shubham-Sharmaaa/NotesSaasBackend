@@ -51,6 +51,7 @@ privateRouter.get("/all-content", async (req: AuthRequest, res: Response) => {
           _id: note._id,
           isPinned: note.isPinned,
           isFavorite: note.isFavorite,
+          isDeleted: note.isDeleted,
         };
       }),
     });
@@ -58,11 +59,41 @@ privateRouter.get("/all-content", async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: "something went wrong", err });
   }
 });
-privateRouter.post(
-  "/delete-content",
+privateRouter.put("/move-trash", async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.body;
+    if (!id)
+      return res.status(403).json({ message: "please provide proper input" });
+    const deletedNote = await NotesModel.findByIdAndUpdate(id, {
+      isDeleted: true,
+    });
+    return res
+      .status(200)
+      .json({ message: "user added to trash", deletedNote });
+  } catch (err) {
+    return res.status(500).json({ message: "something went wrong", err });
+  }
+});
+privateRouter.put("/remove-trash", async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.body;
+    if (!id)
+      return res.status(403).json({ message: "please provide proper input" });
+    const note = await NotesModel.findByIdAndUpdate(id, {
+      isDeleted: false,
+    });
+    return res
+      .status(200)
+      .json({ message: "user removed from trash successfully", note });
+  } catch (err) {
+    return res.status(500).json({ message: "something went wrong", err });
+  }
+});
+privateRouter.delete(
+  "/delete-note",
   async (req: AuthRequest, res: Response) => {
     try {
-      const userId = req.userId;
+      const userId = req.body;
       const { id } = req.body;
       if (!id)
         return res.status(403).json({ message: "please provide proper input" });
@@ -104,20 +135,23 @@ privateRouter.put("/update-note", async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: "something went wrong", err });
   }
 });
-privateRouter.put("/add-favorite", async (req: AuthRequest, res: Response) => {
-  try {
-    const { noteId, isFavorite } = req.body;
-    if (!noteId || !isFavorite)
-      return res.status(400).json({ message: "Please provide a noteId" });
-    const note = await NotesModel.findById(noteId);
-    if (!note) return res.status(404).json({ message: "note not found" });
-    note.isFavorite = !note.isFavorite;
-    await note.save();
-    return res.status(200).json({ message: "Success", newNote: note });
-  } catch (err) {
-    return res.status(500).json({ message: "something went wrong", err });
-  }
-});
+privateRouter.put(
+  "/toggle-favorite",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { noteId, isFavorite } = req.body;
+      if (!noteId || isFavorite === null || isFavorite === undefined)
+        return res.status(400).json({ message: "Please provide a noteId" });
+      const note = await NotesModel.findById(noteId);
+      if (!note) return res.status(404).json({ message: "note not found" });
+      note.isFavorite = !note.isFavorite;
+      await note.save();
+      return res.status(200).json({ message: "Success", newNote: note });
+    } catch (err) {
+      return res.status(500).json({ message: "something went wrong", err });
+    }
+  },
+);
 privateRouter.put("/pin-note", async (req: AuthRequest, res: Response) => {
   try {
     const { noteId } = req.body;
