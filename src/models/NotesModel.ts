@@ -33,6 +33,11 @@ const NotesSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  folderId: {
+    type: mongoose.Types.ObjectId,
+    ref: "Folder",
+    default: null,
+  },
 });
 
 const NotesModel = mongoose.model("Notes", NotesSchema);

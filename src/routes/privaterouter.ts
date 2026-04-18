@@ -4,11 +4,14 @@ import NotesModel from "../models/NotesModel.js";
 import mongoose from "mongoose";
 import LinkModel from "../models/LinkModel.js";
 import bcrypt from "bcrypt";
+import FolderModel from "../models/FolderModel.js";
 const privateRouter = express.Router();
 
 privateRouter.get("/test", (req, res) => {
   res.json({ message: "test endpoint successful" });
 });
+
+//CONTENT
 privateRouter.post(
   "/create-content",
   async (req: AuthRequest, res: Response) => {
@@ -61,6 +64,8 @@ privateRouter.get("/all-content", async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: "something went wrong", err });
   }
 });
+
+//DELETE
 privateRouter.put("/move-trash", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.body;
@@ -125,6 +130,8 @@ privateRouter.delete(
     }
   },
 );
+
+//UPDATE
 privateRouter.put("/update-note", async (req: AuthRequest, res: Response) => {
   try {
     // const userId = req.userId;
@@ -151,6 +158,8 @@ privateRouter.put("/update-note", async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: "something went wrong", err });
   }
 });
+
+//TOGGLES
 privateRouter.put(
   "/toggle-favorite",
   async (req: AuthRequest, res: Response) => {
@@ -182,6 +191,25 @@ privateRouter.put("/pin-note", async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: "something went wrong", err });
   }
 });
+privateRouter.put(
+  "/toggle-archive",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const { noteId } = req.body;
+      if (!noteId)
+        return res.status(400).json({ message: "Please provide a noteId" });
+      const note = await NotesModel.findById(noteId);
+      if (!note) return res.status(404).json({ message: "note not found" });
+      note.isArchived = !note.isArchived;
+      await note.save();
+      return res.status(200).json({ message: "Success", newNote: note });
+    } catch (err) {
+      return res.status(500).json({ message: "something went wrong", err });
+    }
+  },
+);
+
+//LINK
 privateRouter.get("/get-note/:id", async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -258,18 +286,63 @@ privateRouter.delete(
     }
   },
 );
-privateRouter.put(
-  "/toggle-archive",
+
+//FOLDER
+privateRouter.post(
+  "/create-folder",
   async (req: AuthRequest, res: Response) => {
     try {
-      const { noteId } = req.body;
+      const userId = req.userId;
+      const { folderName } = req.body;
+      if (!folderName)
+        return res.status(400).json({ message: "provide valid inpuit" });
+      const newFolder = await FolderModel.create({
+        userId: new mongoose.Types.ObjectId(userId),
+        createdAt: Date.now(),
+        name: folderName,
+      });
+      if (!newFolder)
+        return res.status(500).json({ message: "couldnt create folder" });
+      return res.status(200).json({ message: "new folder created" });
+    } catch (e) {
+      return res
+        .status(500)
+        .json({ message: "something went wrong", error: e });
+    }
+  },
+);
+privateRouter.put(
+  "/move-item-to-folder",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.userId;
+      const { noteId, folderId } = req.body;
       if (!noteId)
-        return res.status(400).json({ message: "Please provide a noteId" });
-      const note = await NotesModel.findById(noteId);
-      if (!note) return res.status(404).json({ message: "note not found" });
-      note.isArchived = !note.isArchived;
+        return res.status(400).json({ message: "please provide input" });
+      const note = await NotesModel.findOne({
+        _id: new mongoose.Types.ObjectId(noteId),
+        userId: new mongoose.Types.ObjectId(userId),
+      });
+      if (!note)
+        return res
+          .status(404)
+          .json({ message: "no note found with the noteid" });
+      if (folderId) {
+        const folder = await FolderModel.findOne({
+          _id: new mongoose.Types.ObjectId(folderId),
+          userId: new mongoose.Types.ObjectId(userId),
+        });
+        if (!folder)
+          return res.status(404).json({
+            message: "no folder found with the folderid or not authorized",
+          });
+        note.folderId = folderId || null;
+        await note.save();
+        return res.status(200).json({ message: "note added to folder" });
+      }
+      note.folderId = null;
       await note.save();
-      return res.status(200).json({ message: "Success", newNote: note });
+      return res.status(200).json({ message: "note removed from folder" });
     } catch (err) {
       return res.status(500).json({ message: "something went wrong", err });
     }
