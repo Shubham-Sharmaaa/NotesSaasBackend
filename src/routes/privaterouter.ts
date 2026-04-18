@@ -66,12 +66,16 @@ privateRouter.put("/move-trash", async (req: AuthRequest, res: Response) => {
     const { id } = req.body;
     if (!id)
       return res.status(403).json({ message: "please provide proper input" });
-    const deletedNote = await NotesModel.findByIdAndUpdate(id, {
-      isDeleted: true,
-      isFavorite: false,
-      isPinned: false,
-      deleteDate: Date.now(),
-    });
+    const deletedNote = await NotesModel.findByIdAndUpdate(
+      id,
+      {
+        isDeleted: true,
+        isFavorite: false,
+        isPinned: false,
+        deleteDate: Date.now(),
+      },
+      { new: true },
+    );
     return res
       .status(200)
       .json({ message: "user added to trash", deletedNote });

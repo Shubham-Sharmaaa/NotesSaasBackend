@@ -26,7 +26,8 @@ const NotesSchema = new mongoose.Schema({
     default: false,
   },
   deleteDate: {
-    type: Date || null,
+    type: Date,
+    default: null,
   },
   isArchived: {
     type: Boolean,
