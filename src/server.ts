@@ -22,12 +22,13 @@ mongoose
   });
 const secret = process.env.SECRET || "your_jwt_secret_key";
 app.use(express.json());
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
-  }),
-);
+// app.use(
+//   cors({
+//     origin: process.env.FRONTEND_URL,
+//     credentials: true,
+//   }),
+// );
+app.use(cors());
 export interface AuthRequest extends Request {
   userId?: string;
 }
@@ -55,12 +56,10 @@ app.get("/get-note/:hash", async (req: AuthRequest, res: Response) => {
     if (!link) return res.status(404).json({ message: "link not found" });
     const note = await NotesModel.findById(link.noteId);
     if (!note) return res.status(404).json({ message: "note not found" });
-    return res
-      .status(200)
-      .json({
-        message: "note found",
-        note: { id: note._id, title: note.title, body: note.body },
-      });
+    return res.status(200).json({
+      message: "note found",
+      note: { id: note._id, title: note.title, body: note.body },
+    });
   } catch (err) {
     return res.status(500).json({ message: "something went wrong", err });
   }
