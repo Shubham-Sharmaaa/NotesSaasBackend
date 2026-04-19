@@ -292,12 +292,37 @@ privateRouter.delete(
 privateRouter.get("/all-folders", async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.userId;
-    const folders = await FolderModel.find(
+
+    const folders = await FolderModel.aggregate([
       {
-        userId: new mongoose.Types.ObjectId(userId),
+        $match: {
+          userId: new mongoose.Types.ObjectId(userId),
+        },
       },
-      "_id name isDeleted createdAt deletedDate",
-    );
+      {
+        $lookup: {
+          from: "foldernotes",
+          localField: "_id",
+          foreignField: "folderId",
+          as: "notes",
+        },
+      },
+      {
+        $addFields: {
+          noteCount: { $size: "$notes" },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          isDeleted: 1,
+          createdAt: 1,
+          deletedDate: 1,
+          noteCount: 1,
+        },
+      },
+    ]);
     return res.status(200).json({ message: "here is the folders", folders });
   } catch (err) {
     return res.status(500).json({ message: "something went wrong", err });
