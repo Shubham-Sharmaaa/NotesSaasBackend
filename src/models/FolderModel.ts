@@ -14,5 +14,13 @@ const FolderSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  deletedDate: {
+    type: Date,
+    default: null,
+  },
 });
 export default mongoose.model("Folder", FolderSchema);

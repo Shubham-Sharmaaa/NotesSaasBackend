@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import LinkModel from "../models/LinkModel.js";
 import bcrypt from "bcrypt";
 import FolderModel from "../models/FolderModel.js";
+import FolderNoteModel from "../models/FolderNoteModel.js";
 const privateRouter = express.Router();
 
 privateRouter.get("/test", (req, res) => {
@@ -96,7 +97,7 @@ privateRouter.put("/remove-trash", async (req: AuthRequest, res: Response) => {
     const note = await NotesModel.findByIdAndUpdate(id, {
       isDeleted: false,
       deleteDate: null,
-    });
+    }).select("_id isDeleted deleteDate");
     return res
       .status(200)
       .json({ message: "user removed from trash successfully", note });
@@ -288,6 +289,50 @@ privateRouter.delete(
 );
 
 //FOLDER
+privateRouter.get("/all-folders", async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.userId;
+    const folders = await FolderModel.find(
+      {
+        userId: new mongoose.Types.ObjectId(userId),
+      },
+      "_id name isDeleted createdAt deletedDate",
+    );
+    return res.status(200).json({ message: "here is the folders", folders });
+  } catch (err) {
+    return res.status(500).json({ message: "something went wrong", err });
+  }
+});
+privateRouter.get(
+  "/get-folder-notes/:folderId",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.userId;
+      const { folderId } = req.params;
+      if (typeof folderId !== "string")
+        return res.status(400).json({ message: "give proper input" });
+      const folder = await FolderModel.findOne({
+        _id: folderId,
+        userId: new mongoose.Types.ObjectId(userId),
+      });
+      if (!folder)
+        return res.status(410).json({ message: " no folder or unauthorized" });
+      const relation = await FolderNoteModel.find({
+        folderId: new mongoose.Types.ObjectId(folderId),
+        userId: new mongoose.Types.ObjectId(userId),
+      }).select("noteId");
+      const noteIds = relation.map((r) => r.noteId);
+      const notes = await NotesModel.find({
+        _id: {
+          $in: noteIds,
+        },
+      });
+      return res.status(200).json({ message: "here is the notes", notes });
+    } catch (err) {
+      return res.status(500).json({ message: "something went wrong", err });
+    }
+  },
+);
 privateRouter.post(
   "/create-folder",
   async (req: AuthRequest, res: Response) => {
@@ -298,12 +343,20 @@ privateRouter.post(
         return res.status(400).json({ message: "provide valid inpuit" });
       const newFolder = await FolderModel.create({
         userId: new mongoose.Types.ObjectId(userId),
-        createdAt: Date.now(),
         name: folderName,
       });
+      const formated = {
+        _id: newFolder._id,
+        name: newFolder.name,
+        deletedDate: newFolder.deletedDate,
+        createdAt: newFolder.createdAt,
+        isDeleted: newFolder.isDeleted,
+      };
       if (!newFolder)
         return res.status(500).json({ message: "couldnt create folder" });
-      return res.status(200).json({ message: "new folder created" });
+      return res
+        .status(200)
+        .json({ message: "new folder created", newFolder: formated });
     } catch (e) {
       return res
         .status(500)
@@ -317,35 +370,66 @@ privateRouter.put(
     try {
       const userId = req.userId;
       const { noteId, folderId } = req.body;
-      if (!noteId)
+      if (!noteId || !folderId)
         return res.status(400).json({ message: "please provide input" });
       const note = await NotesModel.findOne({
         _id: new mongoose.Types.ObjectId(noteId),
         userId: new mongoose.Types.ObjectId(userId),
-      });
+      }).select(
+        "_id title body createdAt isPinned isFavorite isDeleted deleteDate isArchived",
+      );
       if (!note)
         return res
           .status(404)
-          .json({ message: "no note found with the noteid" });
-      if (folderId) {
-        const folder = await FolderModel.findOne({
-          _id: new mongoose.Types.ObjectId(folderId),
-          userId: new mongoose.Types.ObjectId(userId),
-        });
-        if (!folder)
-          return res.status(404).json({
-            message: "no folder found with the folderid or not authorized",
-          });
-        note.folderId = folderId || null;
-        await note.save();
-        return res.status(200).json({ message: "note added to folder" });
-      }
-      note.folderId = null;
-      await note.save();
-      return res.status(200).json({ message: "note removed from folder" });
+          .json({ message: "no note found or unauthorized" });
+      const folder = await FolderModel.findOne({
+        _id: new mongoose.Types.ObjectId(folderId),
+        userId: new mongoose.Types.ObjectId(userId),
+      });
+      if (!folder)
+        return res
+          .status(404)
+          .json({ message: "no folder found or unauthorized " });
+      await FolderNoteModel.create({
+        folderId: new mongoose.Types.ObjectId(folderId),
+        userId: new mongoose.Types.ObjectId(userId),
+        noteId: note._id,
+      });
+
+      return res.status(200).json({ message: "note added to folder", note });
     } catch (err) {
       return res.status(500).json({ message: "something went wrong", err });
     }
   },
 );
+privateRouter.delete(
+  "/delete-folder",
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const userId = req.userId;
+      const { folderId } = req.body;
+      if (!folderId)
+        return res.status(400).json({ message: "give proper input" });
+      const folder = await FolderModel.findOne({
+        _id: new mongoose.Types.ObjectId(folderId),
+        userId: new mongoose.Types.ObjectId(userId),
+      });
+
+      if (!folder)
+        return res
+          .status(404)
+          .json({ message: "Folder not found or unauthorized" });
+      await FolderNoteModel.deleteMany({
+        folderId: new mongoose.Types.ObjectId(folderId),
+        userId: new mongoose.Types.ObjectId(userId),
+      });
+      await folder?.deleteOne();
+
+      return res.status(200).json({ message: "folder deleted" });
+    } catch (err) {
+      return res.status(500).json({ message: "something went wrong", err });
+    }
+  },
+);
+
 export default privateRouter;

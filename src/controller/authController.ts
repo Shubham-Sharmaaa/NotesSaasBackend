@@ -20,7 +20,7 @@ const googleLogin = async (req: Request, res: Response) => {
     const userRes = await axios.get(
       `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`,
     );
-    console.log(userRes.data);
+
     const { name, email, id } = userRes.data;
     if (!name || !email) {
       res
@@ -80,7 +80,6 @@ const googleLogin = async (req: Request, res: Response) => {
 };
 const LocalLogin = async (req: Request, res: Response) => {
   try {
-    console.log("reached locallogin endpoint");
     const { email, password } = req.body;
 
     const existingProvider = await AuthProvider.findOne({

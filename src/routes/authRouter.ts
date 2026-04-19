@@ -16,8 +16,6 @@ authrouter.get("/test", (req, res) => {
 authrouter.get("/google", googleLogin);
 authrouter.post("/", LocalLogin);
 authrouter.post("/send-otp", async (req, res) => {
-  console.log("req ", req);
-  console.log("reqbody ", req.body);
   const { email } = req.body;
   if (!email) {
     return res.status(400).json({ message: "Email is required" });
