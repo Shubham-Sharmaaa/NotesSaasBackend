@@ -1,12 +1,13 @@
 import "./config/env.js";
+import cors from "cors";
 import express, {
   type NextFunction,
   type Request,
   type Response,
 } from "express";
-import cors from "cors";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 const app = express();
+app.use(cors());
 import mongoose from "mongoose";
 import authrouter from "./routes/authRouter.js";
 import privateRouter from "./routes/privaterouter.js";
@@ -28,7 +29,6 @@ app.use(express.json());
 //     credentials: true,
 //   }),
 // );
-app.use(cors());
 export interface AuthRequest extends Request {
   userId?: string;
 }
