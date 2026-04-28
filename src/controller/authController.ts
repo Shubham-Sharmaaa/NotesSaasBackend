@@ -81,7 +81,6 @@ const googleLogin = async (req: Request, res: Response) => {
 const LocalLogin = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
-
     const existingProvider = await AuthProvider.findOne({
       provider: "local",
       providerId: email,
@@ -107,6 +106,7 @@ const LocalLogin = async (req: Request, res: Response) => {
       return res.status(200).json({ message: "Login successful", token });
     }
   } catch (error) {
+    console.log(error);
     res
       .status(500)
       .json({ message: "Error occurred during local login", error });

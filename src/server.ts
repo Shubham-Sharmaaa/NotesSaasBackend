@@ -10,14 +10,26 @@ const app = express();
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin || origin.endsWith(".vercel.app")) {
-        cb(null, true);
-      } else {
-        cb(new Error("Blocked"));
+      if (!origin) return cb(null, true);
+
+      if (
+        origin === process.env.FRONTEND_URL ||
+        origin.endsWith(".vercel.app")
+      ) {
+        return cb(null, true);
       }
+
+      cb(null, false); // NOT cb(new Error(...))
     },
+    credentials: true,
   }),
 );
+// app.use(
+//   cors({
+//     origin: process.env.FRONTEND_URL,
+//     credentials: true,
+//   }),
+// );
 import mongoose from "mongoose";
 import authrouter from "./routes/authRouter.js";
 import privateRouter from "./routes/privaterouter.js";
