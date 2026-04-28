@@ -9,8 +9,13 @@ import jwt, { type JwtPayload } from "jsonwebtoken";
 const app = express();
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
+    origin: (origin, cb) => {
+      if (!origin || origin.endsWith(".vercel.app")) {
+        cb(null, true);
+      } else {
+        cb(new Error("Blocked"));
+      }
+    },
   }),
 );
 import mongoose from "mongoose";
