@@ -7,7 +7,12 @@ import express, {
 } from "express";
 import jwt, { type JwtPayload } from "jsonwebtoken";
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL,
+    credentials: true,
+  }),
+);
 import mongoose from "mongoose";
 import authrouter from "./routes/authRouter.js";
 import privateRouter from "./routes/privaterouter.js";
@@ -23,12 +28,7 @@ mongoose
   });
 const secret = process.env.SECRET || "your_jwt_secret_key";
 app.use(express.json());
-// app.use(
-//   cors({
-//     origin: process.env.FRONTEND_URL,
-//     credentials: true,
-//   }),
-// );
+
 export interface AuthRequest extends Request {
   userId?: string;
 }
